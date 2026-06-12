@@ -9,6 +9,7 @@ from .github_client import GitHubClient
 from .history_store import load_history, update_history
 from .rank_projects import rank_projects
 from .render_markdown import build_chatgpt_prompt, render_daily_markdown
+from .send_email import send_email_with_attachments
 
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -35,7 +36,8 @@ def main() -> None:
     if len(ranked) < settings.candidate_min:
         LOGGER.warning("Only %s candidates generated; consider broadening search conditions", len(ranked))
 
+    send_email_with_attachments()
+
 
 if __name__ == "__main__":
     main()
-

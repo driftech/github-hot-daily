@@ -4,7 +4,7 @@
 
 本项目不会调用 OpenAI API、Gemini API、Claude API、DeepSeek API 或任何付费 AI 生成接口。它只负责抓取、过滤、排序和整理素材，最终文章由你手动复制素材到 ChatGPT Plus 后生成。
 
-本项目也不包含邮件发送功能，不模拟登录 ChatGPT。
+本项目支持可选 SMTP 邮件发送，用于把素材包发到你的邮箱。不配置邮箱时会自动跳过邮件发送，不影响 GitHub Actions 生成 artifact。本项目不模拟登录 ChatGPT。
 
 ## 功能
 
@@ -15,6 +15,7 @@
 - 使用综合热度分排序，不只按总 star 排序。
 - 保存最近 30 天 `history.json`，用于计算 `star_delta`。
 - 输出 `daily_raw.md`、`projects.json`、`history.json`、`chatgpt_prompt.txt`。
+- 可选通过 SMTP 邮件发送素材包附件。
 
 ## 本地运行
 
@@ -78,7 +79,15 @@ on:
 ```yaml
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  SMTP_HOST: ${{ secrets.SMTP_HOST }}
+  SMTP_PORT: ${{ secrets.SMTP_PORT }}
+  SMTP_USER: ${{ secrets.SMTP_USER }}
+  SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+  MAIL_FROM: ${{ secrets.MAIL_FROM }}
+  MAIL_TO: ${{ secrets.MAIL_TO }}
 ```
+
+SMTP 邮件配置是可选的。如果没有配置这些 Secrets，日志会显示 `SMTP 配置不完整，已跳过邮件发送。`，workflow 仍然会成功并上传 artifact。
 
 ## 如何打开 Actions
 
@@ -107,6 +116,82 @@ env:
    - `projects.json`
    - `history.json`
    - `chatgpt_prompt.txt`
+
+## 如何配置邮件发送
+
+邮件功能是可选的。不配置邮箱也不影响 GitHub Actions 抓取项目、生成 output 文件和上传 artifact。
+
+如果你想每天直接在邮箱里收到素材包，需要在 GitHub 仓库里添加 Secrets。添加路径：
+
+`GitHub 仓库页面 → Settings → Secrets and variables → Actions → New repository secret`
+
+需要添加这些 Secrets：
+
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USER`
+- `SMTP_PASSWORD`
+- `MAIL_FROM`
+- `MAIL_TO`
+
+`MAIL_FROM` 通常填写发件邮箱。`MAIL_TO` 填写接收素材包的邮箱，可以和发件邮箱相同。
+
+注意：`SMTP_PASSWORD` 通常不是邮箱登录密码，而是邮箱的 SMTP 授权码或应用专用密码。不要把邮箱密码、授权码或 token 写进代码。
+
+常见邮箱配置示例：
+
+Gmail：
+
+```text
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+```
+
+Gmail 通常需要 Google 账号的应用专用密码。
+
+QQ 邮箱：
+
+```text
+SMTP_HOST=smtp.qq.com
+SMTP_PORT=587
+```
+
+QQ 邮箱通常需要在邮箱设置中开启 SMTP，并使用授权码。
+
+163 邮箱：
+
+```text
+SMTP_HOST=smtp.163.com
+SMTP_PORT=465
+```
+
+163 邮箱也可能使用 `994` 或 `587`，以 163 邮箱后台显示为准，通常需要授权码。
+
+Outlook：
+
+```text
+SMTP_HOST=smtp.office365.com
+SMTP_PORT=587
+```
+
+配置后可以手动测试一次：
+
+1. 打开仓库的 `Actions` 页面。
+2. 左侧选择 `Daily GitHub Hot Projects`。
+3. 点击 `Run workflow`。
+4. 选择 `main` 分支并运行。
+5. 等待运行完成。
+6. 打开这次运行的 `Generate daily material` 日志，查看是否出现 `邮件发送成功：你的接收邮箱`。
+7. 即使邮件失败，也继续到页面底部检查 artifact 是否已经上传。
+
+如果邮件没收到，先检查：
+
+- GitHub Actions 日志。
+- 垃圾邮件箱。
+- `SMTP_HOST` / `SMTP_PORT` 是否正确。
+- `SMTP_PASSWORD` 是否是授权码或应用专用密码，不是登录密码。
+- 发件邮箱是否开启 SMTP。
+- 是否被邮箱服务商拦截。
 
 ## 输出文件
 
