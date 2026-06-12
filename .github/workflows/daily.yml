@@ -1,0 +1,42 @@
+name: Daily GitHub Hot Projects
+
+on:
+  schedule:
+    - cron: "0 20 * * *"
+      timezone: "Asia/Shanghai"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate daily material
+        run: python -m src.main
+
+      - name: Upload output artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-hot-daily-output-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            output/daily_raw.md
+            output/projects.json
+            output/history.json
+            output/chatgpt_prompt.txt
