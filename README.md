@@ -45,24 +45,24 @@ python -m src.main
 触发方式：
 
 - `workflow_dispatch`：支持在 GitHub 页面手动运行。
-- `schedule`：每天北京时间 20:00 自动运行。
+- `schedule`：每天北京时间 19:37 自动运行。
 
 当前 GitHub Actions 的 `schedule` 支持在 cron 条目下设置 IANA 时区，因此本项目使用：
 
 ```yaml
 on:
   schedule:
-    - cron: "0 20 * * *"
+    - cron: "37 19 * * *"
       timezone: "Asia/Shanghai"
   workflow_dispatch:
 ```
 
-如果你的仓库所在 GitHub 环境不支持 `timezone` 字段，可以改成 UTC 备用写法。北京时间是 UTC+8，所以北京时间 20:00 等于 UTC 12:00：
+如果你的仓库所在 GitHub 环境不支持 `timezone` 字段，可以改成 UTC 备用写法。北京时间是 UTC+8，所以北京时间 19:37 等于 UTC 11:37：
 
 ```yaml
 on:
   schedule:
-    - cron: "0 12 * * *"
+    - cron: "37 11 * * *"
   workflow_dispatch:
 ```
 

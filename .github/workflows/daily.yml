@@ -2,7 +2,7 @@ name: Daily GitHub Hot Projects
 
 on:
   schedule:
-    - cron: "0 20 * * *"
+    - cron: "37 19 * * *"
       timezone: "Asia/Shanghai"
   workflow_dispatch:
 
