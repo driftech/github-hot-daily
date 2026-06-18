@@ -13,7 +13,7 @@
 - 过滤 fork、archived、disabled、低信息量、课程作业、个人简历、测试仓库、广告、破解盗版、色情赌博灰产等项目。
 - 生成 10 到 20 个候选项目。
 - 使用综合热度分排序，不只按总 star 排序。
-- 保存最近 30 天 `history.json`，用于计算 `star_delta`。
+- 保存最近 30 天 `history.json`，用于计算 `star_delta`，并对最近几天已经出现过的项目做降权，减少跨天重复。
 - 输出 `daily_raw.md`、`projects.json`、`history.json`、`chatgpt_prompt.txt`。
 - 可选通过 SMTP 邮件发送素材包附件。
 

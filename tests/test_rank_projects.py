@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date, timedelta
+
 from src.rank_projects import rank_projects
 
 
@@ -29,3 +31,16 @@ def test_rank_projects_considers_growth_not_only_total_stars() -> None:
     assert ranked[0]["hot_score"] > ranked[1]["hot_score"]
     assert ranked[0]["hot_score_detail"]["growth_score"] > ranked[1]["hot_score_detail"]["growth_score"]
 
+
+def test_rank_projects_penalizes_recently_repeated_projects() -> None:
+    repeated = make_project("owner/repeated", stars=3000, star_delta=0, description="AI LLM agent framework")
+    fresh = make_project("owner/fresh", stars=2600, star_delta=0, description="AI LLM agent framework")
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    history = {"owner/repeated": [{"date": yesterday, "stars": 3000}]}
+
+    ranked = rank_projects([repeated, fresh], history=history)
+
+    assert ranked[0]["repo_name"] == "owner/fresh"
+    repeated_result = next(item for item in ranked if item["repo_name"] == "owner/repeated")
+    assert repeated_result["hot_score_detail"]["repeat_penalty"] > 0
+    assert repeated_result["hot_score_detail"]["last_seen_days"] == 1

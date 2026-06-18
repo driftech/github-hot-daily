@@ -35,6 +35,29 @@ def get_star_delta(repo_name: str, current_stars: int, history: History, today: 
         return 0
 
 
+def get_last_seen_days(repo_name: str, history: History, today: date | None = None) -> int | None:
+    today = today or date.today()
+    records = history.get(repo_name, [])
+    seen_dates: list[date] = []
+    for item in records:
+        raw_date = item.get("date")
+        if raw_date == today.isoformat():
+            continue
+        try:
+            seen_dates.append(date.fromisoformat(str(raw_date)))
+        except ValueError:
+            continue
+    if not seen_dates:
+        return None
+    return max((today - max(seen_dates)).days, 0)
+
+
+def get_seen_count(repo_name: str, history: History, today: date | None = None) -> int:
+    today = today or date.today()
+    records = history.get(repo_name, [])
+    return sum(1 for item in records if item.get("date") != today.isoformat())
+
+
 def update_history(projects: list[dict[str, Any]], history: History, path: Path, keep_days: int = 30) -> History:
     today_value = date.today()
     today = today_value.isoformat()
