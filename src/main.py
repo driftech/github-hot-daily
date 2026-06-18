@@ -7,7 +7,7 @@ from .config import CHATGPT_PROMPT_PATH, DAILY_RAW_PATH, HISTORY_PATH, OUTPUT_DI
 from .fetch_github import fetch_candidate_projects
 from .github_client import GitHubClient
 from .history_store import load_history, update_history
-from .rank_projects import rank_projects
+from .rank_projects import score_projects
 from .render_markdown import build_chatgpt_prompt, render_daily_markdown
 from .send_email import send_email_with_attachments
 
@@ -23,7 +23,7 @@ def main() -> None:
     history = load_history(HISTORY_PATH)
     client = GitHubClient(settings)
     candidates = fetch_candidate_projects(client, settings)
-    ranked = rank_projects(candidates, history)[: settings.candidate_max]
+    ranked = score_projects(candidates, history)[: settings.candidate_max]
 
     update_history(ranked, history, HISTORY_PATH, keep_days=settings.history_days)
 

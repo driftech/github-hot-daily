@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from src.rank_projects import rank_projects
+from src.rank_projects import rank_projects, score_projects
 
 
 def make_project(repo_name: str, stars: int, star_delta: int, description: str) -> dict:
@@ -44,3 +44,13 @@ def test_rank_projects_penalizes_recently_repeated_projects() -> None:
     repeated_result = next(item for item in ranked if item["repo_name"] == "owner/repeated")
     assert repeated_result["hot_score_detail"]["repeat_penalty"] > 0
     assert repeated_result["hot_score_detail"]["last_seen_days"] == 1
+
+
+def test_score_projects_preserves_input_order_for_trending() -> None:
+    first = make_project("owner/trending-first", stars=100, star_delta=0, description="AI project")
+    second = make_project("owner/trending-second", stars=10000, star_delta=300, description="AI project")
+
+    scored = score_projects([first, second], history={})
+
+    assert [item["repo_name"] for item in scored] == ["owner/trending-first", "owner/trending-second"]
+    assert all("hot_score" in item for item in scored)

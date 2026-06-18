@@ -102,8 +102,13 @@ def calculate_hot_score(project: dict[str, Any], history: History | None = None)
 
 
 def rank_projects(projects: list[dict[str, Any]], history: History | None = None) -> list[dict[str, Any]]:
+    ranked = score_projects(projects, history)
+    return sorted(ranked, key=lambda item: item["hot_score"], reverse=True)
+
+
+def score_projects(projects: list[dict[str, Any]], history: History | None = None) -> list[dict[str, Any]]:
     ranked: list[dict[str, Any]] = []
     for project in projects:
         score, detail = calculate_hot_score(project, history)
         ranked.append({**project, "star_delta": detail["star_delta"], "hot_score": score, "hot_score_detail": detail})
-    return sorted(ranked, key=lambda item: item["hot_score"], reverse=True)
+    return ranked

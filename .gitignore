@@ -4,3 +4,7 @@ __pycache__/
 venv/
 *.pyc
 .env
+output/daily_raw.md
+output/projects.json
+output/history.json
+output/chatgpt_prompt.txt

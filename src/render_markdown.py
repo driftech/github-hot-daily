@@ -57,7 +57,7 @@ def render_daily_markdown(projects: list[dict[str, Any]], output_path: Path, pro
     observations = [
         f"本次共筛选出 {len(projects)} 个候选项目。",
         f"主要语言覆盖：{', '.join(languages[:8]) if languages else '暂无明确语言信息'}。",
-        "排序综合考虑 star 规模、fork、近期创建与 push、关键词匹配、README 质量和历史 star 增长。",
+        "候选项目来源于 GitHub Trending 日榜前列，保留 Trending 顺序；hot_score 仅作为参考指标。",
     ]
 
     content = [
@@ -83,4 +83,3 @@ def render_daily_markdown(projects: list[dict[str, Any]], output_path: Path, pro
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text("\n".join(content), encoding="utf-8")
-

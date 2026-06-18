@@ -43,6 +43,19 @@ class GitHubClient:
             LOGGER.warning("GitHub response is not JSON: %s error=%s", path, exc)
             return None
 
+    def get_text_url(self, url: str) -> str:
+        try:
+            response = self.session.get(
+                url,
+                headers={"Accept": "text/html"},
+                timeout=self.settings.request_timeout_seconds,
+            )
+            response.raise_for_status()
+            return response.text
+        except requests.RequestException as exc:
+            LOGGER.warning("GitHub text request failed: %s error=%s", url, exc)
+            return ""
+
     def search_repositories(self, query: str, per_page: int = 20) -> list[dict[str, Any]]:
         payload = self.get_json(
             "/search/repositories",
@@ -57,6 +70,9 @@ class GitHubClient:
             return []
         return payload.get("items", [])
 
+    def fetch_repository(self, owner: str, repo: str) -> dict[str, Any] | None:
+        return self.get_json(f"/repos/{owner}/{repo}")
+
     def fetch_readme_text(self, owner: str, repo: str) -> str:
         payload = self.get_json(f"/repos/{owner}/{repo}/readme")
         if not payload:
@@ -69,4 +85,3 @@ class GitHubClient:
         except (ValueError, TypeError) as exc:
             LOGGER.warning("README decode failed: %s/%s error=%s", owner, repo, exc)
             return ""
-

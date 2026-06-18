@@ -31,52 +31,6 @@ FOCUS_KEYWORDS = [
     "cli",
 ]
 
-QUERY_KEYWORDS = [
-    "AI",
-    "LLM",
-    "agent",
-    "MCP",
-    "RAG",
-    "python",
-    "developer-tools",
-    "productivity",
-    "automation",
-    "frontend",
-    "web",
-    "security",
-    "data",
-    "open-source-models",
-    "cli",
-]
-
-NEGATIVE_KEYWORDS = [
-    "coursework",
-    "homework",
-    "assignment",
-    "resume",
-    "portfolio",
-    "demo repo",
-    "test repo",
-    "advertising",
-    "casino",
-    "gambling",
-    "porn",
-    "adult",
-    "crack",
-    "piracy",
-    "破解版",
-    "破解",
-    "博彩",
-    "赌博",
-    "色情",
-    "灰产",
-    "课程作业",
-    "个人简历",
-    "简历",
-    "测试仓库",
-]
-
-
 @dataclass(frozen=True)
 class Settings:
     github_token: str | None
@@ -93,7 +47,6 @@ def load_settings() -> Settings:
         github_api_url=os.getenv("GITHUB_API_URL", "https://api.github.com").rstrip("/"),
         request_timeout_seconds=int(os.getenv("REQUEST_TIMEOUT_SECONDS", "20")),
         candidate_min=int(os.getenv("CANDIDATE_MIN", "10")),
-        candidate_max=int(os.getenv("CANDIDATE_MAX", "20")),
+        candidate_max=int(os.getenv("CANDIDATE_MAX", "10")),
         history_days=int(os.getenv("HISTORY_DAYS", "30")),
     )
-

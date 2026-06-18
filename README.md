@@ -1,19 +1,19 @@
 # GitHub Hot Daily
 
-低成本 GitHub 热点公众号素材生成工具。项目每天通过 GitHub REST API 抓取公开仓库数据，筛选 AI、LLM、Agent、MCP、RAG、Python、开发者工具、效率工具、自动化、前端、Web、安全、数据、开源模型、CLI 工具等方向的热点项目，并生成适合复制到 ChatGPT Plus 的素材包。
+低成本 GitHub 热点公众号素材生成工具。项目每天抓取 GitHub Trending 日榜前 10 个项目，再通过 GitHub REST API 补全公开仓库数据和 README，并生成适合复制到 ChatGPT Plus 的素材包。
 
-本项目不会调用 OpenAI API、Gemini API、Claude API、DeepSeek API 或任何付费 AI 生成接口。它只负责抓取、过滤、排序和整理素材，最终文章由你手动复制素材到 ChatGPT Plus 后生成。
+本项目不会调用 OpenAI API、Gemini API、Claude API、DeepSeek API 或任何付费 AI 生成接口。它只负责抓取 GitHub Trending、补全仓库信息和整理素材，最终文章由你手动复制素材到 ChatGPT Plus 后生成。
 
 本项目支持可选 SMTP 邮件发送，用于把素材包发到你的邮箱。不配置邮箱时会自动跳过邮件发送，不影响 GitHub Actions 生成 artifact。本项目不模拟登录 ChatGPT。
 
 ## 功能
 
-- 使用 GitHub REST API 抓取公开仓库。
+- 抓取 GitHub Trending 日榜前 10 个项目。
+- 使用 GitHub REST API 补全公开仓库信息和 README。
 - 支持 GitHub Actions 内置 `GITHUB_TOKEN` 认证。
-- 过滤 fork、archived、disabled、低信息量、课程作业、个人简历、测试仓库、广告、破解盗版、色情赌博灰产等项目。
-- 生成 10 到 20 个候选项目。
-- 使用综合热度分排序，不只按总 star 排序。
-- 保存最近 30 天 `history.json`，用于计算 `star_delta`，并对最近几天已经出现过的项目做降权，减少跨天重复。
+- 默认生成 10 个候选项目。
+- 保留 GitHub Trending 页面顺序，`hot_score` 仅作为参考指标。
+- 保存最近 30 天 `history.json`，用于计算 `star_delta`。
 - 输出 `daily_raw.md`、`projects.json`、`history.json`、`chatgpt_prompt.txt`。
 - 可选通过 SMTP 邮件发送素材包附件。
 
@@ -236,4 +236,4 @@ pytest
 
 ## 为什么不调用付费 AI API
 
-这个项目定位是低成本素材准备工具。自动化部分只做公开数据抓取、规则过滤、打分排序和 Markdown 渲染，不承担付费模型生成任务。这样可以避免 API 成本、密钥管理和额度风险，也符合“手动复制到 ChatGPT Plus 生成公众号文章”的工作流。
+这个项目定位是低成本素材准备工具。自动化部分只做公开数据抓取、仓库信息补全、参考打分和 Markdown 渲染，不承担付费模型生成任务。这样可以避免 API 成本、密钥管理和额度风险，也符合“手动复制到 ChatGPT Plus 生成公众号文章”的工作流。

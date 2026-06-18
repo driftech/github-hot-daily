@@ -1,45 +1,57 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from html.parser import HTMLParser
 from typing import Any
 
-from .config import NEGATIVE_KEYWORDS, QUERY_KEYWORDS, Settings
+from .config import Settings
 from .github_client import GitHubClient
-from .readme_parser import clean_markdown_text, extract_readme_images, summarize_readme
+from .readme_parser import extract_readme_images, summarize_readme
 
 
-def build_search_queries(now: datetime | None = None) -> list[str]:
-    now = now or datetime.now(timezone.utc)
-    recent_push = (now - timedelta(days=14)).date().isoformat()
-    recent_create = (now - timedelta(days=180)).date().isoformat()
-    base = "fork:false archived:false"
-    return [
-        f"{keyword} {base} pushed:>={recent_push} stars:>50"
-        for keyword in QUERY_KEYWORDS
-    ] + [
-        f"topic:{keyword.lower()} {base} created:>={recent_create} stars:>20"
-        for keyword in QUERY_KEYWORDS
-        if " " not in keyword
-    ]
+TRENDING_URL = "https://github.com/trending?since=daily"
 
 
-def has_negative_signal(project: dict[str, Any], readme_text: str) -> bool:
-    haystack = " ".join(
-        [
-            project.get("name") or "",
-            project.get("full_name") or "",
-            project.get("description") or "",
-            " ".join(project.get("topics") or []),
-            readme_text[:3000],
-        ]
-    ).lower()
-    return any(keyword.lower() in haystack for keyword in NEGATIVE_KEYWORDS)
+class TrendingRepoParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.in_h2 = False
+        self.h2_depth = 0
+        self.repo_names: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "h2":
+            self.in_h2 = True
+            self.h2_depth = 1
+            return
+        if self.in_h2:
+            self.h2_depth += 1
+        if tag != "a" or not self.in_h2:
+            return
+
+        attrs_dict = dict(attrs)
+        href = attrs_dict.get("href", "").strip("/")
+        parts = href.split("/")
+        if len(parts) != 2:
+            return
+        owner, repo = parts
+        if owner in {"apps", "features", "marketplace", "sponsors", "topics", "trending"}:
+            return
+        repo_name = f"{owner}/{repo}"
+        if repo_name not in self.repo_names:
+            self.repo_names.append(repo_name)
+
+    def handle_endtag(self, tag: str) -> None:
+        if self.in_h2:
+            self.h2_depth -= 1
+            if tag == "h2" or self.h2_depth <= 0:
+                self.in_h2 = False
+                self.h2_depth = 0
 
 
-def is_low_information(project: dict[str, Any], readme_text: str) -> bool:
-    description = (project.get("description") or "").strip()
-    cleaned_readme = clean_markdown_text(readme_text)
-    return not description and len(cleaned_readme) < 300
+def parse_trending_repo_names(html: str, limit: int = 10) -> list[str]:
+    parser = TrendingRepoParser()
+    parser.feed(html)
+    return parser.repo_names[:limit]
 
 
 def normalize_project(raw: dict[str, Any], readme_text: str, candidate_reason: str) -> dict[str, Any]:
@@ -71,31 +83,54 @@ def normalize_project(raw: dict[str, Any], readme_text: str, candidate_reason: s
     }
 
 
+def minimal_trending_project(repo_name: str, candidate_reason: str) -> dict[str, Any]:
+    owner_name, _, name = repo_name.partition("/")
+    return normalize_project(
+        {
+            "full_name": repo_name,
+            "name": name,
+            "owner": {"login": owner_name, "avatar_url": ""},
+            "html_url": f"https://github.com/{repo_name}",
+            "description": "",
+            "stargazers_count": 0,
+            "forks_count": 0,
+            "watchers_count": 0,
+            "open_issues_count": 0,
+            "language": "",
+            "topics": [],
+            "created_at": "",
+            "updated_at": "",
+            "pushed_at": "",
+            "license": None,
+        },
+        readme_text="",
+        candidate_reason=candidate_reason,
+    )
+
+
 def fetch_candidate_projects(client: GitHubClient, settings: Settings) -> list[dict[str, Any]]:
     seen: set[str] = set()
     candidates: list[dict[str, Any]] = []
-    queries = build_search_queries()
 
-    for query in queries:
-        if len(candidates) >= settings.candidate_max * 3:
+    html = client.get_text_url(TRENDING_URL)
+    repo_names = parse_trending_repo_names(html, limit=max(settings.candidate_max * 2, 10))
+
+    for trending_rank, repo_name in enumerate(repo_names, start=1):
+        if len(candidates) >= settings.candidate_max:
             break
-        for raw in client.search_repositories(query, per_page=15):
-            repo_name = raw.get("full_name")
-            if not repo_name or repo_name in seen:
-                continue
-            seen.add(repo_name)
-            if raw.get("fork") or raw.get("archived") or raw.get("disabled"):
-                continue
+        if repo_name in seen:
+            continue
+        seen.add(repo_name)
 
-            owner = (raw.get("owner") or {}).get("login")
-            name = raw.get("name")
-            readme_text = client.fetch_readme_text(owner, name) if owner and name else ""
-            if is_low_information(raw, readme_text):
-                continue
-            if has_negative_signal(raw, readme_text):
-                continue
+        owner, name = repo_name.split("/", 1)
+        candidate_reason = f"GitHub Trending 日榜第 {trending_rank} 名"
 
-            candidates.append(normalize_project(raw, readme_text, candidate_reason=f"匹配 GitHub 搜索条件：{query}"))
+        raw = client.fetch_repository(owner, name)
+        if not raw:
+            candidates.append(minimal_trending_project(repo_name, candidate_reason))
+            continue
+
+        readme_text = client.fetch_readme_text(owner, name)
+        candidates.append(normalize_project(raw, readme_text, candidate_reason=candidate_reason))
 
     return candidates
-
